@@ -1,0 +1,49 @@
+version: '3'
+services:
+  db:
+    platform: linux/x86_64
+    image: mysql:5.7
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: magento2
+      MYSQL_USER: root1
+      MYSQL_PASSWORD: root
+    ports:
+      - 3307:3306
+    networks:
+      - magento
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        user: sammy
+        uid: 1000
+    container_name: magento_app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+      - ./nginx/php.ini:/usr/local/etc/php/conf.d/php.ini
+    networks:
+      - magento
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:1.17-alpine
+    container_name: magento_nginx
+    restart: unless-stopped
+    ports:
+      - 8080:80
+    volumes:
+      - ./:/var/www
+      - ./nginx:/etc/nginx/conf.d
+    networks:
+      - magento
+    depends_on:
+      - app
+networks:
+  magento:
+    driver: bridge
